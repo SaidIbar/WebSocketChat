@@ -1,17 +1,18 @@
-﻿
-
-namespace WebSocketChat
+﻿namespace WebSocketChat
 {
     using SocketIOClient;
     using System;
+    using System.Runtime.CompilerServices;
     using System.Text.Json;
+    using WebSocketChat;
 
     public class ClientManager
     {
-        private static SocketIO _client;
+        private static SocketIO? _client;
         private const string ServerUrl = "wss://api.leetcode.se";
         private const string ServerPath = "/sys25d";
         private const string messageEventName = "myMessage";
+        ClientManager clientManager = new ClientManager();
         public static async Task Connect()
         {
             var message = new Message(); 
@@ -23,19 +24,23 @@ namespace WebSocketChat
             _client.On(messageEventName, static response =>
             {
                 var receivedMessage = response.GetValue<string>();
-              //  string jsonString = JsonSerializer.Deserialize(receivedMessage);
-                Message inMessage = JsonSerializer.Deserialize<Message>(receivedMessage);
-                DisplayMessage(inMessage, "receive");
-                // Console.WriteLine(jsonString);
-               // Console.WriteLine($"{inMessage.Sender}: {inMessage.Content} {"Skickat: "} {inMessage.Timestamp}");
-
+                if (receivedMessage != null)
+                {
+                    Message? inMessage = JsonSerializer.Deserialize<Message>(receivedMessage);
+                    if (inMessage != null)
+                    {
+                        DisplayMessage(inMessage, "receive");
+                    }
+                    // else: handle deserialization failure if needed
+                }
+                // else: handle null receivedMessage if needed
             });
+            Console.WriteLine("Waiting connection ... ");
 
             _client.OnConnected += async (sender, eventArgs) =>
             {
-                Console.WriteLine("Connected to the server.");
-                
-               // await _client.EmitAsync(messageEventName, "lets talk"); 
+                Console.SetCursorPosition(0, Console.CursorTop - 1);
+                Console.WriteLine("Connected to the server."); 
             };
 
             _client.OnDisconnected += (sender, eventArgs) =>
@@ -45,16 +50,13 @@ namespace WebSocketChat
             await _client.ConnectAsync();
             await Task.Delay(2000); // Keep the connection alive
 
-            Console.WriteLine($"Connected... {_client.Connected}");
+            //Console.WriteLine($"Connected... {_client.Connected}");
         }
 
         public static async Task SendMessage(Message myInput)
         {
-            //message.Timestamp = DateTime.ParseExact(dateString, "d", CultureInfo.InvariantCulture);
             await _client.EmitAsync(messageEventName, myInput);
             DisplayMessage(myInput, "send");
-
-
         }
 
         public static void DisplayMessage(Message message, string messageType)
@@ -72,26 +74,29 @@ namespace WebSocketChat
                 messageDis = "motaget";
             }
 
-            string messageSent = ChatUtils(message.Timestamp);
+            string messageSent = ClientManagerHelpers.ChatUtils(message.Timestamp);
 
 
             Console.WriteLine($"{message.Sender}: {message.Content} {messageDis} : {messageSent}");
             Console.ResetColor();
         }
 
-        private static string ChatUtils(DateTime timestamp)
+        public static async Task<string> ConnectToServerAsync(string status)
         {
-            string newDate = "";
-            if (timestamp.Date == DateTime.Now.Date)
+            if (status == "disconnect" && _client != null && _client.Connected)
             {
-                newDate = "nu";
+                await _client.DisconnectAsync();
+                return "disconnected";
+            } else if (status == "disconnect" && (_client == null || !_client.Connected))
+            {
+                return "disconnected";
             }
             else
             {
-                newDate = timestamp.ToString();
+                await ClientManager.Connect();
+                return "connected";
             }
             
-            return newDate;
         }
     }
 }
