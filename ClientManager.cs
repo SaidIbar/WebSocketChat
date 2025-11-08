@@ -4,10 +4,7 @@ namespace WebSocketChat
 {
     using SocketIOClient;
     using System;
-    using System.Globalization;
-    using System.Runtime.InteropServices.JavaScript;
     using System.Text.Json;
-    using static System.Runtime.InteropServices.JavaScript.JSType;
 
     public class ClientManager
     {
