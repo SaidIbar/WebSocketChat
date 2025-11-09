@@ -36,12 +36,19 @@
                 // else: handle null receivedMessage if needed
             });
             Console.WriteLine("Waiting connection ... ");
+            
 
             _client.OnConnected += async (sender, eventArgs) =>
             {
                 Console.SetCursorPosition(0, Console.CursorTop - 1);
                 Console.WriteLine("Connected to the server."); 
             };
+
+            _client.OnReconnectAttempt += (sender, attempt) =>
+            {
+                Console.WriteLine($"Reconnecting... Attempt {attempt}");
+            };
+
 
             _client.OnDisconnected += (sender, eventArgs) =>
             {
@@ -61,7 +68,7 @@
 
         public static void DisplayMessage(Message message, string messageType)
         {
-            //ChatUtils chatUtils = new ChatUtils();
+           
             string messageDis = "";
             if(messageType == "send")
             {
@@ -74,10 +81,10 @@
                 messageDis = "motaget";
             }
 
-            string messageSent = ClientManagerHelpers.ChatUtils(message.Timestamp);
+            string messageSent = ClientManagerHelpers.ChatDateTimeUtils(message.Timestamp);
 
 
-            Console.WriteLine($"{message.Sender}: {message.Content} {messageDis} : {messageSent}");
+            Console.WriteLine($"{message.Sender}: {message.Content}  {messageSent}");
             Console.ResetColor();
         }
 
