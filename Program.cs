@@ -45,6 +45,16 @@ namespace WebSocketChat
                 Message myInput = new Message();
                 myInput.Sender = sender;
                 myInput.Content = Console.ReadLine();
+                var checkMessage = ClientManagerHelpers.IsValidMessageInput(myInput.Content);
+                if (!checkMessage)
+                {
+                    while (!checkMessage)
+                    {
+                        Console.Write("Enter you message: ");
+                        myInput.Content = Console.ReadLine();
+                        checkMessage = ClientManagerHelpers.IsValidMessageInput(myInput.Content!); //!string.IsNullOrEmpty(_sender) && ClientManagerHelpers.IsValidNameInput(_sender!);
+                    }
+                }
                 Console.SetCursorPosition(0, Console.CursorTop - 1);
                 ClientManagerHelpers.ClearCurrentConsoleLine();
                 myInput.Timestamp = DateTime.Now;
@@ -71,7 +81,6 @@ namespace WebSocketChat
                     var exitInput = Console.ReadLine();
                     string disconnectResult = "";
 
-
                     if (exitInput.ToLower() == "y")
                     {
                         disconnectResult = ClientManager.ConnectToServerAsync("disconnect").Result;
@@ -91,14 +100,14 @@ namespace WebSocketChat
                     {
                         Console.Write("Enter you name: ");
                         _sender = Console.ReadLine();
-                        var checkName = !string.IsNullOrEmpty(_sender) && ClientManagerHelpers.IsValidInput(_sender!);
+                        var checkName = ClientManagerHelpers.IsValidNameInput(_sender!);
                         if (!checkName)
                         {
                             while (!checkName)
                             {
                                 Console.Write("Enter you name: ");
                                 _sender = Console.ReadLine();
-                                checkName = !string.IsNullOrEmpty(_sender) && ClientManagerHelpers.IsValidInput(_sender!);
+                                checkName = ClientManagerHelpers.IsValidNameInput(_sender!); //!string.IsNullOrEmpty(_sender) && ClientManagerHelpers.IsValidNameInput(_sender!);
                             }
                         }
                         Console.SetCursorPosition(0, Console.CursorTop - 1);

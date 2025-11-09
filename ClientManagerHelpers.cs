@@ -24,16 +24,20 @@ namespace WebSocketChat
             {
                 return newDate = "  ---> igår " + timestamp.ToString("hh:mm tt"); ;
             }
-            else
+            else if(diff > 1)
             {
                 
-                return newDate = " ---> " + timestamp.ToString("dd MMMM"); //DateTime.Now.ToString("yyyy MMMM")
+                return newDate = " ---> " + timestamp.ToString("dd MMMM"); 
+            }
+            else
+            {
+                return newDate = " ---> " + timestamp.ToString("dd MMMM yyyy"); 
             }
 
             //return newDate;
         }
 
-        public static bool IsValidInput(string input)
+        public static bool IsValidNameInput(string input)
         {
             if (!string.IsNullOrEmpty(input))
             {
@@ -46,6 +50,19 @@ namespace WebSocketChat
 
             }
             
+        }
+
+        public static bool IsValidMessageInput(string input)
+        {
+            if (!string.IsNullOrEmpty(input))
+            {
+                return true;
+            }
+            else
+            {
+                Console.WriteLine("Message is empty. Please enter a message.");
+                return false;
+            }
         }
 
         public static void ClearCurrentConsoleLine()
