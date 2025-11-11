@@ -5,15 +5,18 @@ namespace WebSocketChat
     public class Program
     {
         public static string? _sender;
+       
 
         static void Main()
         {
+
            
             try
             {
                
                 ChatMenu();
                
+
                 while (true)
                 {
                    
@@ -44,21 +47,41 @@ namespace WebSocketChat
             {
                 Message myInput = new Message();
                 myInput.Sender = sender;
-                myInput.Content = Console.ReadLine();
-                var checkMessage = ClientManagerHelpers.IsValidMessageInput(myInput.Content);
-                if (!checkMessage)
-                {
-                    while (!checkMessage)
+                
+                string input = Console.ReadLine();
+
+                    if (input == "00")
                     {
-                        Console.Write("Enter you message: ");
-                        myInput.Content = Console.ReadLine();
-                        checkMessage = ClientManagerHelpers.IsValidMessageInput(myInput.Content!); //!string.IsNullOrEmpty(_sender) && ClientManagerHelpers.IsValidNameInput(_sender!);
-                    }
+                        ChatMenu();
+                      
+                    }else if (input == "exit")
+                    {
+                        string disconnectResult = ClientManager.ConnectToServerAsync("disconnect").Result;
+                        if (disconnectResult.Equals("disconnected"))
+                        {
+                            Console.WriteLine("You are disconnected from the server.");
+                        }
+                        ChatMenu();
                 }
-                Console.SetCursorPosition(0, Console.CursorTop - 1);
-                ClientManagerHelpers.ClearCurrentConsoleLine();
-                myInput.Timestamp = DateTime.Now;
-                await ClientManager.SendMessage(myInput);
+                else
+                {
+                    myInput.Content = input;
+                    var checkMessage = ClientManagerHelpers.IsValidMessageInput(myInput.Content);
+                    if (!checkMessage)
+                    {
+                        while (!checkMessage)
+                        {
+                            Console.Write("Enter you message: ");
+                            myInput.Content = Console.ReadLine();
+                            checkMessage = ClientManagerHelpers.IsValidMessageInput(myInput.Content!); //!string.IsNullOrEmpty(_sender) && ClientManagerHelpers.IsValidNameInput(_sender!);
+                        }
+                    }
+                    Console.SetCursorPosition(0, Console.CursorTop - 1);
+                    ClientManagerHelpers.ClearCurrentConsoleLine();
+                    myInput.Timestamp = DateTime.Now;
+                    await ClientManager.SendMessage(myInput);
+                }
+                   
             }
             catch (Exception ex)
             {
@@ -66,12 +89,15 @@ namespace WebSocketChat
             }
         }
 
+
+
         private static void ChatMenu()
         {
-            Console.WriteLine("Welcom to online chat\n");
+            Console.WriteLine("Welcom to online chat");
             Console.WriteLine("To strat chatting press 1");
             Console.WriteLine("To change Event name press 2");
             Console.WriteLine("To disconnect press 3");
+            Console.WriteLine("To see message history press 4");
             Console.WriteLine("To quit press q");
             var input = Console.ReadLine();
             switch (input)
@@ -126,7 +152,19 @@ namespace WebSocketChat
                     }
                     ChatMenu();
                     break;
+                case "4":
+                    ClientManager.DisplayMessageHistory();
+                    ChatMenu();
+                    break;
+                default:
+                    Console.WriteLine("Invalid option.");
+                    break;
             }
+
         }
+
+       
+
     }
+
 }

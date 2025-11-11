@@ -1,21 +1,26 @@
 ﻿namespace WebSocketChat
 {
+    using SocketIO.Core;
     using SocketIOClient;
     using System;
-    using System.Runtime.CompilerServices;
+    using System.Net.Sockets;
     using System.Text.Json;
-    using WebSocketChat;
+   
 
     public class ClientManager
     {
         private static SocketIO? _client;
+        private static List<Message> messages = new List<Message>();
         private const string ServerUrl = "wss://api.leetcode.se";
         private const string ServerPath = "/sys25d";
         private const string messageEventName = "myMessage";
-        ClientManager clientManager = new ClientManager();
+        private static string userName = "";
+
+
         public static async Task Connect()
         {
-            var message = new Message(); 
+            var message = new Message(); Animations spin = new Animations();
+
             _client = new SocketIO(ServerUrl, new SocketIOOptions
             {
                 Path = ServerPath,
@@ -26,6 +31,7 @@
                 var receivedMessage = response.GetValue<string>();
                 if (receivedMessage != null)
                 {
+
                     Message? inMessage = JsonSerializer.Deserialize<Message>(receivedMessage);
                     if (inMessage != null)
                     {
@@ -35,13 +41,27 @@
                 }
                 // else: handle null receivedMessage if needed
             });
-            Console.WriteLine("Waiting connection ... ");
-            
 
+            _client.On("typing", response =>
+            {
+                string typingUser = response.GetValue<string>();
+                if (typingUser != userName)
+                    Console.WriteLine($"✍️  {typingUser} is typing...");
+            });
+
+
+            SpinAnimation.Start("waiting for the connection  ");
+            //Console.WriteLine($"Waiting connection ... ");
+
+            //System.Threading.Thread.Sleep(3000);
             _client.OnConnected += async (sender, eventArgs) =>
             {
-                Console.SetCursorPosition(0, Console.CursorTop - 1);
-                Console.WriteLine("Connected to the server."); 
+                
+                SpinAnimation.Stop();
+                Console.SetCursorPosition(0, Console.CursorTop + 1);
+                Console.WriteLine("Connected to the server.");
+                //Console.SetCursorPosition(0, Console.CursorTop - 0);
+              
             };
 
             _client.OnReconnectAttempt += (sender, attempt) =>
@@ -60,9 +80,13 @@
             //Console.WriteLine($"Connected... {_client.Connected}");
         }
 
+      
+
         public static async Task SendMessage(Message myInput)
         {
+           // _client.EmitAsync("joinRoom", "rum1"); // exempel: gå med i rum1
             await _client.EmitAsync(messageEventName, myInput);
+           
             DisplayMessage(myInput, "send");
         }
 
@@ -86,6 +110,8 @@
 
             Console.WriteLine($"{message.Sender}: {message.Content}  {messageSent}");
             Console.ResetColor();
+            messages.Add(message);
+            Console.WriteLine(messages.Count);
         }
 
         public static async Task<string> ConnectToServerAsync(string status)
@@ -105,5 +131,18 @@
             }
             
         }
+
+        public static void DisplayMessageHistory()
+        {
+            Console.WriteLine("---- Meddelandehistorik ----");
+            foreach (var msg in messages)
+            {
+                string messageSent = ClientManagerHelpers.ChatDateTimeUtils(msg.Timestamp);
+                Console.WriteLine($"{msg.Sender}: {msg.Content}  {messageSent}");
+            }
+           
+        }
+
+
     }
 }
