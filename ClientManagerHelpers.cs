@@ -34,7 +34,6 @@ namespace WebSocketChat
                 return newDate = " ---> " + timestamp.ToString("dd MMMM yyyy"); 
             }
 
-            //return newDate;
         }
 
         public static bool IsValidNameInput(string input)
@@ -45,9 +44,8 @@ namespace WebSocketChat
             }
             else
             {
-                Console.WriteLine("Sender name is not set. Please enter your name.");
+                Console.WriteLine("UserName name is not set. Please enter your name.");
                 return false;
-
             }
             
         }
@@ -72,5 +70,20 @@ namespace WebSocketChat
             Console.Write(new string(' ', Console.WindowWidth));
             Console.SetCursorPosition(0, currentLineCursor);
         }
+
+        public static bool IsAnswerYes(string input)
+        {
+            var lowerInput = input.ToLower();
+            if (lowerInput == "y" || lowerInput == "yes")
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+
     }
 }

@@ -6,12 +6,12 @@ using System.Threading.Tasks;
 
 namespace WebSocketChat
 {
-    public class Message
+    public class UserInfo
     {
-        public string Content { get; set; }
-        public DateTime Timestamp { get; set; }
         public string UserName { get; set; }
-        public string Channel { get; set; }
+        public DateTime UserJoinedAt { get; set; }
+        public DateTime UserLastSeenAt { get; set; }
+      
        
     }
 }
