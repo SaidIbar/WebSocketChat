@@ -4,18 +4,20 @@
     {
         public static string? _sender;
         public static int menuCount = 0;
-
+        public static Message _message = new Message();
 
         private static void Main()
         {
-           
-            Console.WriteLine("Welcom to online chat, you alwas get back to the menu by pressing 00 an enter");
+        
+
+            Console.WriteLine("Welcom to online chat, you can at any time go back to the menu by pressing 00 and enter");
             ChatMenu();
             while (true)
             {
                 if (!string.IsNullOrEmpty(_sender))
                 {
-                    StartChat(_sender!).Wait();
+                    _message.UserName = _sender;
+                    StartChat(_message!).Wait();
                 }
                 else
                 {
@@ -23,34 +25,26 @@
                     _sender = Console.ReadLine();
                     if (!string.IsNullOrEmpty(_sender))
                     {
-                        StartChat(_sender!).Wait();
+                        _message.UserName = _sender;
+                        StartChat(_message!).Wait();
                     }
                 }
             }
           
         }
 
-        private static async Task StartChat(string sender)
+        private static async Task StartChat(Message myInput)
         {
             try
             {
-                Message myInput = new Message();
-                myInput.UserName = sender;
+                
+                //myInput.UserName = sender;
                 string input = Console.ReadLine();
 
                 if (input == "00")
                 {
                     Console.SetCursorPosition(0, Console.CursorTop - 2);
                     //Console.SetCursorPosition(0, Console.CursorTop + 1);
-                    ChatMenu();
-                }
-                else if (input == "exit")
-                {
-                    string disconnectResult = ClientManager.ConnectToServerAsync("disconnect").Result;
-                    if (disconnectResult.Equals("disconnected"))
-                    {
-                        Console.WriteLine("You are disconnected from the server.");
-                    }
                     ChatMenu();
                 }
                 else
@@ -69,7 +63,8 @@
                     Console.SetCursorPosition(0, Console.CursorTop - 1);
                     ClientManagerHelpers.ClearCurrentConsoleLine();
                     myInput.Timestamp = DateTime.Now;
-                    await ClientManager.SendMessage(myInput, _sender);
+                   // myInput.Room = ClientManager.messageEventName;
+                    await ClientManager.SendMessage(myInput);
                 }
                    
             }
@@ -85,12 +80,13 @@
         {
             var menuArray = new string[]
             {
-                "Connect",
-                "Change Event name",
-                "List of informated messages",
+                "Connect and Start chating",
                 "Disconnect",
-                "See message history",
-                "See event list",
+                "List message history",
+                "List events list",
+                "List connected users",
+                "List of informated messages",
+                "Change Event name and connect",
                 "Quit\n"
             };
             menuCount = menuArray.Length;
@@ -102,18 +98,29 @@
           
            for (int i = 0; i < menuArray.Length; i++)
             {
+                if(i == menuArray.Length -1)
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                   
+                }else
+                {
+                    Console.ForegroundColor = ConsoleColor.Cyan;
+                }
+
                 Console.WriteLine($" {i + 1} . {menuArray[i]}");
                 
 
             }
+            Console.ResetColor();
             string disconnectResult = "";
             var input = Console.ReadLine();
             switch (input)
             {
-                
+              
                 case "1":
-                    string connect = ClientManager.ConnectToServerAsync("connect").Result;
-                    if (connect.Equals("connected"))
+                    _message.Status = "join";
+                    string connectInRoom = ClientManager.ConnectToServerAsync(_message).Result;
+                    if (connectInRoom.Equals("connected"))
                     {
                         Console.Write("Enter you name: > ");
                         _sender = Console.ReadLine();
@@ -127,12 +134,50 @@
                                 checkName = ClientManagerHelpers.IsValidNameInput(_sender!);
                             }
                         }
+                        _message.UserName = _sender;
                         Console.SetCursorPosition(0, Console.CursorTop - 1);
-                        Console.WriteLine($"{_sender} type your message: ");
-                        StartChat(_sender).Wait();
+                        Console.WriteLine("Enter the room name you want to join");
+                        var roomName = Console.ReadLine();
+                        var romNameValid = ClientManagerHelpers.IsValidMessageInput(roomName!);
+                        if (!romNameValid)
+                        {
+                            while (!romNameValid)
+                            {
+                                Console.Write("Enter the room name you want to join: ");
+                                roomName = Console.ReadLine();
+                                romNameValid = ClientManagerHelpers.IsValidMessageInput(roomName!);
+                            }
+                        }
+                        _message.Room = roomName;
+                        ClientManager.JoinRoomAsync(_message).Wait();
+                        _message.Status = "join";
+                        Console.WriteLine($"{_message.UserName} type your message: ");
+                        StartChat(_message).Wait();
                     }
                     break;
                 case "2":
+                    _message.Status = "leave";
+                    disconnectResult = ClientManager.ConnectToServerAsync(_message).Result;
+                    if (disconnectResult.Equals("disconnected"))
+                    {
+                        Console.WriteLine("You are disconnected from the server.");
+                    }
+                    ChatMenu();
+                    break;
+
+                case "3":
+                    ClientManager.DisplayMessageHistory();
+                    ChatMenu();
+                    break;
+                case "4":
+                    ClientManager.GetEventList();
+                    ChatMenu();
+                    break;
+                case "5":
+                    ClientManager.ConnectedUsers();
+                    ChatMenu();
+                    break;
+                case "6":
                     Console.WriteLine($"Changing event name {ClientManager.messageEventName}");
                     Console.Write("Enter new event name: > ");
                     var eventInput = Console.ReadLine();
@@ -140,28 +185,12 @@
                     Console.WriteLine($"Event name changed to: {newEventName}");
                     ChatMenu();
                     break;
-                case "3":
+                case "7":
                     ClientManager.GetInformatedMessage();
                     ChatMenu();
                     break;
-                case "4":
-                    disconnectResult = ClientManager.ConnectToServerAsync("disconnect").Result;
-                    if (disconnectResult.Equals("disconnected"))
-                    {
-                        Console.WriteLine("You are disconnected from the server.");
-                    }
-                    ChatMenu();
-                    break;
                 
-                case "5":
-                    ClientManager.DisplayMessageHistory();
-                    ChatMenu();
-                    break;
-                case "6":
-                    ClientManager.GetEventList();
-                    ChatMenu();
-                    break;
-                case "7":
+                case "8":
                     Console.WriteLine("Are you sure you want to quit y/n");
                     var exitInput = Console.ReadLine();
 
@@ -174,7 +203,8 @@
                     var answer = ClientManagerHelpers.IsAnswerYes(exitInput!);
                     if (answer)
                     {
-                        disconnectResult = ClientManager.ConnectToServerAsync("disconnect").Result;
+                        _message.Status = "leave";
+                        disconnectResult = ClientManager.ConnectToServerAsync(_message).Result;
                         if (disconnectResult.Equals("disconnected"))
                         {
                             Console.WriteLine("You are disconnected from the server.");

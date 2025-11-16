@@ -11,7 +11,8 @@ namespace WebSocketChat
         public string Content { get; set; }
         public DateTime Timestamp { get; set; }
         public string UserName { get; set; }
-        public string Channel { get; set; }
-       
+        public string Room { get; set; }
+        public string Status { get; set; }  
+
     }
 }

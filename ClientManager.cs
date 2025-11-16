@@ -3,9 +3,12 @@
     using SocketIO.Core;
     using SocketIOClient;
     using System;
+    using System.Diagnostics.Metrics;
     using System.Net.Sockets;
+    using System.Reflection;
+    using System.Reflection.Metadata;
     using System.Text.Json;
-   
+    using System.Text.RegularExpressions;
 
     public class ClientManager
     {
@@ -13,12 +16,13 @@
         private static List<Message> messages = new List<Message>();
         private const string ServerUrl = "wss://api.leetcode.se";
         private const string ServerPath = "/sys25d";
-        public static string messageEventName = "myMessage";
+        public static string messageEventName = "message";
         private static string userName = "";
         private static List<string> connectedUsers = new List<string>();
         private static List<string> EventList = new List<string>();
         private static List<object> InformatedMessage = new List<object>();
         private static List<string> ErroMessage = new List<string>();
+       // static string currentRoom = "general";
 
 
         public static async Task Connect()
@@ -32,28 +36,15 @@
                 Transport = SocketIOClient.Transport.TransportProtocol.WebSocket
             });
 
-            /*_client.On(messageEventName, static response =>
-            {
-                var receivedMessage = response.GetValue<string>();
-                //object receivedMessage2 = response.GetValue<object>();
-               
-                    Message? inMessage = JsonSerializer.Deserialize<Message>(receivedMessage);
-                    if (inMessage != null)
-                    {
-                        DisplayMessage(inMessage, "receive");
-                    }  
-                
-                
-            });*/
+           
             _client.OnAny((eventName, response) =>
             {
                 //Console.WriteLine($"\n [Event: {eventName}]");
-                EventList.Add(eventName);
                
-
                 try
                 {
-                   
+                    EventList.Add(eventName);
+                    
                     //var element = response.GetValue<JsonElement>();
                     var element = response.GetValue<System.Text.Json.JsonElement>();
 
@@ -61,12 +52,8 @@
                     {
                         case JsonValueKind.String:
                             var inMessage = JsonSerializer.Deserialize<Message>(element.GetString()!);
+                            connectedUsers.Add(inMessage.UserName);
                             DisplayMessage(inMessage, "receive");
-                            break;
-
-                        case JsonValueKind.True:
-                        case JsonValueKind.False:
-                            Console.WriteLine($"Boolean: {element.GetBoolean()}");
                             break;
 
                         case JsonValueKind.Object:
@@ -74,7 +61,8 @@
                             string json = JsonSerializer.Serialize(
                             element, new JsonSerializerOptions { WriteIndented = true });
                             InformatedMessage.Add(json);
-                           // Console.WriteLine($"String: {element.GetString()}");
+                            
+                            // Console.WriteLine($"String: {element.GetString()}");
                             break;
                         case JsonValueKind.Null:
                             ErroMessage.Add("Null value");
@@ -93,21 +81,16 @@
                
             });
 
-            _client.On("typing", response =>
+           
+           _client.On("typing", response =>
             {
-                string typingUser = response.GetValue<string>();
-                //if (typingUser != userName)
+                string typingUser = response.GetValue<JsonElement>().GetProperty("UserName").ToString();
+                if (typingUser != userName)
                 Console.WriteLine($" {typingUser} is typing...");
             });
 
-          
-            _client.On("join", response =>
-            {
-                var users = response.GetValue<string[]>();
-                
-                connectedUsers.Add(users.ToString());
-                Console.WriteLine($"\n User joined: {users[users.Length -1]}");
-            });
+
+
             Console.SetCursorPosition(0, Console.CursorTop - 1);
             SpinAnimation.Start("waiting for the connection  ");
             //Console.WriteLine($"Waiting connection ... ");
@@ -115,10 +98,11 @@
             //System.Threading.Thread.Sleep(3000);
             _client.OnConnected += async (sender, eventArgs) =>
             {
-                 message.Channel = messageEventName;
+                //await _client.EmitAsync("joinRoom", "room1");
+                //message.Room = messageEventName;
                 SpinAnimation.Stop();
                 Console.SetCursorPosition(0, Console.CursorTop + 1);
-                Console.WriteLine($"Connected to the server in chennel {message.Channel}");
+                Console.WriteLine($"Connected to the server in chennel {message.Room}");
                
             };
 
@@ -128,8 +112,9 @@
             };
 
 
-            _client.OnDisconnected += (sender, eventArgs) =>
+            _client.OnDisconnected += async (sender, eventArgs) =>
             {
+                
                 Console.WriteLine("Disconnected from the server.");
             };
             await _client.ConnectAsync();
@@ -138,13 +123,27 @@
             //Console.WriteLine($"Connected... {_client.Connected}");
         }
 
-        public static async Task SendMessage(Message myInput, string user)
+        public static async Task SendMessage(Message myInput)
         {
-            await _client.EmitAsync("typing", user);
-            myInput.Channel = messageEventName;
-            await _client.EmitAsync(messageEventName, myInput);
-           
+          
+            await _client.EmitAsync(myInput.Room, new { UserName = myInput.UserName, Message = myInput.Content, room = myInput.Room, Timestamp = myInput.Timestamp });
+            
             DisplayMessage(myInput, "send");
+        }
+
+        public static async Task JoinRoomAsync(Message message)
+        {
+            //await _client.EmitAsync("joinRoom", message.Room);
+            await _client.EmitAsync(message.Room, $"{message.UserName} joined {message.Room} at {message.Timestamp}");
+            // Console.WriteLine($"{message.UserName} has joined the room {message.Room} at {message.Timestamp}");
+
+        }
+
+        public static async Task LeaveRoomAsync(Message message)
+        {
+           
+            await _client.EmitAsync(message.Room, $"{message.UserName} left {message.Room} at {message.Timestamp}");
+
         }
 
         public static void DisplayMessage(Message message, string messageType)
@@ -168,13 +167,14 @@
             
         }
 
-        public static async Task<string> ConnectToServerAsync(string status)
+        public static async Task<string> ConnectToServerAsync(Message message)
         {
-            if (status == "disconnect" && _client != null && _client.Connected)
+            if (message.Status == "leave" && _client != null && _client.Connected)
             {
+                ClientManager.LeaveRoomAsync(message).Wait();
                 await _client.DisconnectAsync();
                 return "disconnected";
-            } else if (status == "disconnect" && (_client == null || !_client.Connected))
+            } else if (message.Status == "leave" && (_client == null || !_client.Connected))
             {
                 return "disconnected";
             }
@@ -204,21 +204,32 @@
 
         public static string EventName(string eventName)
         {
+            Console.SetCursorPosition(0, Console.CursorTop - 1);
+            Console.WriteLine("----Event list-----\n");
             if (!string.IsNullOrEmpty(eventName))
             {
                 return messageEventName = eventName;
             }
             else
             {
-                return messageEventName = "myMessage";
+                return messageEventName = "message";
             }
         }
 
-        internal static void ConnectedUsers()
+        public static void ConnectedUsers()
         {
-            foreach (var user in connectedUsers)
+            Console.SetCursorPosition(0, Console.CursorTop - 1);
+            Console.WriteLine("---- Connected users ----\n");
+
+            if (connectedUsers.Count == 0)
             {
-               // Console.WriteLine($" - {user.UserName}");
+                Console.WriteLine("No users received yet.");
+                return;
+            }
+            foreach (var members in connectedUsers)
+            {
+               
+                Console.WriteLine($" - {members}");
             }
         }
 
@@ -231,7 +242,8 @@
             }
             foreach (var infoMessage in InformatedMessage)
             {
-                Console.WriteLine($" - {infoMessage}");
+                string result = Regex.Replace((string)infoMessage, @"\s+", " ").Trim().ToLower();
+                Console.WriteLine($" - {result}");
             }
         }
 
@@ -242,7 +254,7 @@
                 Console.WriteLine("No events received yet.");
                 return;
             }
-            foreach (var eventName in EventList)
+            foreach (var eventName in EventList.Distinct())
             {
                 Console.WriteLine($" - {eventName}");
             }

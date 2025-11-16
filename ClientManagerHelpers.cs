@@ -58,7 +58,7 @@ namespace WebSocketChat
             }
             else
             {
-                Console.WriteLine("Message is empty. Please enter a message.");
+                Console.WriteLine("Your input is empty. Please enter a valid input.");
                 return false;
             }
         }
