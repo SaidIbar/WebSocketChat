@@ -16,7 +16,7 @@
         private static List<Message> messages = new List<Message>();
         private const string ServerUrl = "wss://api.leetcode.se";
         private const string ServerPath = "/sys25d";
-        public static string messageEventName = "message";
+        public static string messageEventName;
         private static string userName = "";
         private static List<string> connectedUsers = new List<string>();
         private static List<string> EventList = new List<string>();
@@ -29,7 +29,7 @@
         {
             var message = new Message();
            // messageEventName = EventName("");
-
+           messageEventName = "message";    
             _client = new SocketIO(ServerUrl, new SocketIOOptions
             {
                 Path = ServerPath,
@@ -53,7 +53,13 @@
                         case JsonValueKind.String:
                             var inMessage = JsonSerializer.Deserialize<Message>(element.GetString()!);
                             connectedUsers.Add(inMessage.UserName);
-                            DisplayMessage(inMessage, "receive");
+                           
+
+                            if (inMessage.EventName == messageEventName && inMessage.Room == "myRoom")
+                            {
+                               DisplayMessage(inMessage, "receive");
+                            }
+                            
                             break;
 
                         case JsonValueKind.Object:
@@ -126,7 +132,7 @@
         public static async Task SendMessage(Message myInput)
         {
           
-            await _client.EmitAsync(myInput.Room, new { UserName = myInput.UserName, Message = myInput.Content, room = myInput.Room, Timestamp = myInput.Timestamp });
+            await _client.EmitAsync(myInput.EventName, new { UserName = myInput.UserName, Message = myInput.Content, room = myInput.Room, Timestamp = myInput.Timestamp });
             
             DisplayMessage(myInput, "send");
         }
@@ -208,13 +214,14 @@
         {
             Console.SetCursorPosition(0, Console.CursorTop - 1);
             Console.WriteLine("----Event list-----\n");
+            
             if (!string.IsNullOrEmpty(eventName))
             {
-                return messageEventName = eventName;
+                return eventName;
             }
             else
             {
-                return messageEventName = "message";
+                return "message";
             }
         }
 

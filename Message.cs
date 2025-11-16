@@ -8,6 +8,7 @@ namespace WebSocketChat
 {
     public class Message
     {
+        public string EventName { get; set; }
         public string Content { get; set; }
         public DateTime Timestamp { get; set; }
         public string UserName { get; set; }

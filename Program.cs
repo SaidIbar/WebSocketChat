@@ -11,6 +11,7 @@
         
 
             Console.WriteLine("Welcom to online chat, you can at any time go back to the menu by pressing 00 and enter");
+            _message.EventName = "message";
             ChatMenu();
             while (true)
             {
@@ -63,7 +64,8 @@
                     Console.SetCursorPosition(0, Console.CursorTop - 1);
                     ClientManagerHelpers.ClearCurrentConsoleLine();
                     myInput.Timestamp = DateTime.Now;
-                   // myInput.Room = ClientManager.messageEventName;
+                    //myInput.EventName = ClientManager.EventName(myInput.EventName);
+                    // myInput.Room = ClientManager.messageEventName;
                     await ClientManager.SendMessage(myInput);
                 }
                    
@@ -149,6 +151,7 @@
                             }
                         }
                         _message.Room = roomName;
+                        _message.Timestamp = DateTime.Now;
                         ClientManager.JoinRoomAsync(_message).Wait();
                         _message.Status = "join";
                         Console.WriteLine($"{_message.UserName} type your message: ");
@@ -178,7 +181,7 @@
                     ChatMenu();
                     break;
                 case "7":
-                    Console.WriteLine($"Changing event name {ClientManager.messageEventName}");
+                    Console.WriteLine($"Changing event name {_message.EventName}");
                     Console.Write("Enter new event name: > ");
                     var eventInput = Console.ReadLine();
                     var newEventName = ClientManager.EventName(eventInput);

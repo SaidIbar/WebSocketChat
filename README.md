@@ -15,3 +15,10 @@ Applikationen startar med att användaren får en meny vall med 8 val
 I applicationen skickas Json formaterade meddelanden och tar emot Json och presenteras på ett läsbart sätt, meddelanden som inte kan formateras sammlas i en lista och presenteras i dess form.
 Help klassen <b>"ClientManagerHelpers"</b> används för att formater och validera texter och datumen.
 When disconnected the application will do a number of attempt to reconnect.
+
+För att skicka ett meddelande till chatten skapas ett objekt av klassen <b>"Message"</b> som sedan serialiseras till Json format och skickas till servern.
+Exempel på ett meddelande som skickas till servern:
+Använd examplet nedan för att skapa ett meddelande i Postman för att testa.
+
+
+{"Content":"Hello hello and hello","Timestamp":"2025-11-14T14:19:05.4920871+01:00","UserName":"Mats","Channel":"message", "Room":"myRoom", "EventName":"message"}
