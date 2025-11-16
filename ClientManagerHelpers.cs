@@ -50,7 +50,7 @@ namespace WebSocketChat
             
         }
 
-        public static bool IsValidMessageInput(string input)
+        public static bool IsValidMessageInput(string input, string inputName)
         {
             if (!string.IsNullOrEmpty(input))
             {
@@ -58,7 +58,7 @@ namespace WebSocketChat
             }
             else
             {
-                Console.WriteLine("Your input is empty. Please enter a valid input.");
+                Console.WriteLine($"Your input is empty. Please enter a valid {inputName}.");
                 return false;
             }
         }

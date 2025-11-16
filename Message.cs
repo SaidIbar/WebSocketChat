@@ -13,6 +13,7 @@ namespace WebSocketChat
         public string UserName { get; set; }
         public string Room { get; set; }
         public string Status { get; set; }  
+        public bool Connected { get; set; }   
 
     }
 }

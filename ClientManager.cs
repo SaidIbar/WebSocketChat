@@ -133,31 +133,30 @@
 
         public static async Task JoinRoomAsync(Message message)
         {
-            //await _client.EmitAsync("joinRoom", message.Room);
-            await _client.EmitAsync(message.Room, $"{message.UserName} joined {message.Room} at {message.Timestamp}");
-            // Console.WriteLine($"{message.UserName} has joined the room {message.Room} at {message.Timestamp}");
-
+            var timeStamp = ClientManagerHelpers.ChatDateTimeUtils(message.Timestamp);
+            await _client.EmitAsync(message.Room, $"{message.UserName} joined {message.Room} at {timeStamp}");
+           
         }
 
         public static async Task LeaveRoomAsync(Message message)
         {
-           
-            await _client.EmitAsync(message.Room, $"{message.UserName} left {message.Room} at {message.Timestamp}");
+            var timeStamp = ClientManagerHelpers.ChatDateTimeUtils(message.Timestamp);
+            await _client.EmitAsync(message.Room, $"{message.UserName} left {message.Room} at {timeStamp}");
 
         }
 
         public static void DisplayMessage(Message message, string messageType)
         {           
-            string messageDis = "";
+           
             if(messageType == "send")
             {
                 Console.ForegroundColor = ConsoleColor.Cyan;
-                //messageDis = "Skickat";
+              
             }
             else
             {
                 Console.ForegroundColor = ConsoleColor.Yellow;
-                //messageDis = "motaget";
+              
             }
 
             string messageSent = ClientManagerHelpers.ChatDateTimeUtils(message.Timestamp);
@@ -167,21 +166,24 @@
             
         }
 
-        public static async Task<string> ConnectToServerAsync(Message message)
+        public static async Task<bool> ConnectToServerAsync(Message message)
         {
             if (message.Status == "leave" && _client != null && _client.Connected)
             {
                 ClientManager.LeaveRoomAsync(message).Wait();
                 await _client.DisconnectAsync();
-                return "disconnected";
+                message.Connected = false;
+                return false;
             } else if (message.Status == "leave" && (_client == null || !_client.Connected))
             {
-                return "disconnected";
+                message.Connected = false;
+                return false;
             }
             else
             {
                 await ClientManager.Connect();
-                return "connected";
+                message.Connected = true;
+                return true;
             }
             
         }

@@ -50,14 +50,14 @@
                 else
                 {
                     myInput.Content = input;
-                    var checkMessage = ClientManagerHelpers.IsValidMessageInput(myInput.Content);
+                    var checkMessage = ClientManagerHelpers.IsValidMessageInput(myInput.Content, "message");
                     if (!checkMessage)
                     {
                         while (!checkMessage)
                         {
                             Console.Write("Enter you message: ");
                             myInput.Content = Console.ReadLine();
-                            checkMessage = ClientManagerHelpers.IsValidMessageInput(myInput.Content!); //!string.IsNullOrEmpty(_sender) && ClientManagerHelpers.IsValidNameInput(_sender!);
+                            checkMessage = ClientManagerHelpers.IsValidMessageInput(myInput.Content!, "message"); //!string.IsNullOrEmpty(_sender) && ClientManagerHelpers.IsValidNameInput(_sender!);
                         }
                     }
                     Console.SetCursorPosition(0, Console.CursorTop - 1);
@@ -112,15 +112,15 @@
 
             }
             Console.ResetColor();
-            string disconnectResult = "";
+            bool disconnectResult = false;
             var input = Console.ReadLine();
             switch (input)
             {
               
                 case "1":
                     _message.Status = "join";
-                    string connectInRoom = ClientManager.ConnectToServerAsync(_message).Result;
-                    if (connectInRoom.Equals("connected"))
+                    bool connectInRoom = ClientManager.ConnectToServerAsync(_message).Result;
+                    if (connectInRoom)
                     {
                         Console.Write("Enter you name: > ");
                         _sender = Console.ReadLine();
@@ -138,14 +138,14 @@
                         Console.SetCursorPosition(0, Console.CursorTop - 1);
                         Console.WriteLine("Enter the room name you want to join");
                         var roomName = Console.ReadLine();
-                        var romNameValid = ClientManagerHelpers.IsValidMessageInput(roomName!);
+                        var romNameValid = ClientManagerHelpers.IsValidMessageInput(roomName!, "room name");
                         if (!romNameValid)
                         {
                             while (!romNameValid)
                             {
                                 Console.Write("Enter the room name you want to join: ");
                                 roomName = Console.ReadLine();
-                                romNameValid = ClientManagerHelpers.IsValidMessageInput(roomName!);
+                                romNameValid = ClientManagerHelpers.IsValidMessageInput(roomName!, "room name");
                             }
                         }
                         _message.Room = roomName;
@@ -158,7 +158,7 @@
                 case "2":
                     _message.Status = "leave";
                     disconnectResult = ClientManager.ConnectToServerAsync(_message).Result;
-                    if (disconnectResult.Equals("disconnected"))
+                    if (!disconnectResult)
                     {
                         Console.WriteLine("You are disconnected from the server.");
                     }
@@ -177,7 +177,7 @@
                     ClientManager.ConnectedUsers();
                     ChatMenu();
                     break;
-                case "6":
+                case "7":
                     Console.WriteLine($"Changing event name {ClientManager.messageEventName}");
                     Console.Write("Enter new event name: > ");
                     var eventInput = Console.ReadLine();
@@ -185,7 +185,7 @@
                     Console.WriteLine($"Event name changed to: {newEventName}");
                     ChatMenu();
                     break;
-                case "7":
+                case "6":
                     ClientManager.GetInformatedMessage();
                     ChatMenu();
                     break;
