@@ -151,6 +151,7 @@
                             }
                         }
                         _message.Room = roomName;
+                        ClientManager.currentRoom = roomName!;
                         _message.Timestamp = DateTime.Now;
                         ClientManager.JoinRoomAsync(_message).Wait();
                         _message.Status = "join";

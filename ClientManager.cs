@@ -22,7 +22,7 @@
         private static List<string> EventList = new List<string>();
         private static List<object> InformatedMessage = new List<object>();
         private static List<string> ErroMessage = new List<string>();
-       // static string currentRoom = "general";
+        public static string currentRoom;
 
 
         public static async Task Connect()
@@ -53,13 +53,10 @@
                         case JsonValueKind.String:
                             var inMessage = JsonSerializer.Deserialize<Message>(element.GetString()!);
                             connectedUsers.Add(inMessage.UserName);
-                           
-
-                            if (inMessage.EventName == messageEventName && inMessage.Room == "myRoom")
+                            if (inMessage.EventName == messageEventName && inMessage.Room == currentRoom)
                             {
-                               DisplayMessage(inMessage, "receive");
+                               DisplayMessage(inMessage,null, "receive");
                             }
-                            
                             break;
 
                         case JsonValueKind.Object:
@@ -95,20 +92,24 @@
                 Console.WriteLine($" {typingUser} is typing...");
             });
 
+            _client.On("join", response =>
+            {
+                var element = response.GetValue<JsonElement>();
+                var joinIn = JsonSerializer.Deserialize<Join>(element.GetString()!);
+                DisplayMessage(null, joinIn, "join");
+            });
+
 
 
             Console.SetCursorPosition(0, Console.CursorTop - 1);
             SpinAnimation.Start("waiting for the connection  ");
-            //Console.WriteLine($"Waiting connection ... ");
-
-            //System.Threading.Thread.Sleep(3000);
+            
             _client.OnConnected += async (sender, eventArgs) =>
             {
-                //await _client.EmitAsync("joinRoom", "room1");
-                //message.Room = messageEventName;
+                
                 SpinAnimation.Stop();
                 Console.SetCursorPosition(0, Console.CursorTop + 1);
-                Console.WriteLine($"Connected to the server in chennel {message.Room}");
+                Console.WriteLine($"Connected to the server in chennel {currentRoom}");
                
             };
 
@@ -124,9 +125,7 @@
                 Console.WriteLine("Disconnected from the server.");
             };
             await _client.ConnectAsync();
-            //await Task.Delay(2000); // Keep the connection alive
-
-            //Console.WriteLine($"Connected... {_client.Connected}");
+           
         }
 
         public static async Task SendMessage(Message myInput)
@@ -134,11 +133,12 @@
           
             await _client.EmitAsync(myInput.EventName, new { UserName = myInput.UserName, Message = myInput.Content, room = myInput.Room, Timestamp = myInput.Timestamp });
             
-            DisplayMessage(myInput, "send");
+            DisplayMessage(myInput, null, "send");
         }
 
         public static async Task JoinRoomAsync(Message message)
         {
+            currentRoom = message.Room;
             var timeStamp = ClientManagerHelpers.ChatDateTimeUtils(message.Timestamp);
             await _client.EmitAsync(message.Room, $"{message.UserName} joined {message.Room} at {timeStamp}");
            
@@ -151,24 +151,36 @@
 
         }
 
-        public static void DisplayMessage(Message message, string messageType)
+        public static void DisplayMessage(Message? message, Join? join, string messageType)
         {           
-           
             if(messageType == "send")
             {
                 Console.ForegroundColor = ConsoleColor.Cyan;
               
             }
-            else
+            else if(messageType == "join")
+            {
+                Console.ForegroundColor = ConsoleColor.Green;
+              
+            }else
             {
                 Console.ForegroundColor = ConsoleColor.Yellow;
-              
-            }
 
-            string messageSent = ClientManagerHelpers.ChatDateTimeUtils(message.Timestamp);
-            Console.WriteLine($">{message.UserName}: {message.Content}  {messageSent}");
-            Console.ResetColor();
-            messages.Add(message);
+            }
+           
+
+            string messageSent;
+            if (messageType == "join")
+            {
+                messageSent = ClientManagerHelpers.ChatDateTimeUtils(join.Timestamp);
+                Console.WriteLine($">{join.UserName} joined {join.Room} at {join.Timestamp}");
+                Console.ResetColor();
+            }
+            else
+                messageSent = ClientManagerHelpers.ChatDateTimeUtils(message.Timestamp);
+                Console.WriteLine($">{message.UserName}: {message.Content}  {messageSent}");
+                Console.ResetColor();
+                messages.Add(message);
             
         }
 
@@ -269,4 +281,7 @@
             }
         }
     }
+
+    // Fix for CS0051: Make Join public so its accessibility matches the method signature
+   
 }
